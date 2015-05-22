@@ -5,7 +5,7 @@ import (
     "bufio"
     "fmt"
     "os"
-    "./packer2terraform"
+    "github.com/saymedia/packer2terraform/packer2terraform"
 )
 
 func main() {
