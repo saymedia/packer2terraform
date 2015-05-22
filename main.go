@@ -5,6 +5,7 @@ import (
     "bufio"
     "fmt"
     "os"
+    "./packer2terraform"
 )
 
 func main() {
@@ -19,20 +20,20 @@ func main() {
 
     reader := bufio.NewReader(os.Stdin)
 
-    parsed, err := Parse(reader)
+    parsed, err := packer2terraform.Parse(reader)
     if err != nil {
         fmt.Printf("File read failed %s", err)
         os.Exit(1)
     }
 
-    artifacts, err := Filter(parsed)
+    artifacts, err := packer2terraform.Filter(parsed)
     if err != nil {
         // fmt.Errorf("Packer build failed: %s", err)
         fmt.Printf("Packer build failed: %s", err)
         os.Exit(2)
     }
 
-    vars, err := ToTerraformVars(artifacts)
+    vars, err := packer2terraform.ToTerraformVars(artifacts)
     if err != nil {
         os.Exit(3)
     }

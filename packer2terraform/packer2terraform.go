@@ -1,5 +1,5 @@
 
-package main
+package packer2terraform
 
 import (
     "encoding/csv"

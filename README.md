@@ -1,8 +1,10 @@
 # packer2terraform
 
-packer2terraform turns Packer's [machine-readable output](https://packer.io/docs/command-line/machine-readable.html) into a [Terraform tfvars file](https://terraform.io/docs/configuration/variables.html). For example, you have Packer build an AMI that Terraform deploys to AWS.
+packer2terraform turns Packer's [machine-readable output](https://packer.io/docs/command-line/machine-readable.html) into [Terraform-readable tfvars](https://terraform.io/docs/configuration/variables.html). For example, you have Packer build an AMI that Terraform deploys to AWS.
 
 ## Usage
+
+packer2terraform reads from STDIN and writes to STDOUT.
 
     packer -machine-readable build app.json | packer2terraform > app.tfvars
 
@@ -12,7 +14,7 @@ packer2terraform turns Packer's [machine-readable output](https://packer.io/docs
 
 ## Test
 
-    go test
+    go test ./..
 
 ## License
 
