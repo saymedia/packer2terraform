@@ -4,7 +4,7 @@ package main
 import (
     "bufio"
     "flag"
-    "fmt"
+    "log"
     "io"
     "io/ioutil"
     "os"
@@ -13,7 +13,7 @@ import (
 
 
 func help() {
-    fmt.Println(`Usage packer2terraform [options...]
+    log.Println(`Usage packer2terraform [options...]
 packer2terraform turns Packer's machine-readable output into a Terraform-readable format.
 
 Options:
@@ -46,8 +46,7 @@ func main() {
     if len(*csv) > 0 {
         f, err := os.Open(*csv)
         if err != nil {
-            fmt.Printf("CSV file read failed %s", err)
-            os.Exit(1)
+            log.Fatalf("CSV file read failed %s", err)
         }
         reader = bufio.NewReader(f)
     } else if stat, _ := os.Stdin.Stat(); (stat.Mode() & os.ModeCharDevice) == 0 {
@@ -63,8 +62,7 @@ func main() {
     // Get the CSV as a string array
     parsed, err := packer2terraform.ReadCSV(reader)
     if err != nil {
-        fmt.Printf("CSV read failed %s", err)
-        os.Exit(2)
+        log.Fatalf("CSV read failed %s", err)
     }
 
 
@@ -72,8 +70,7 @@ func main() {
     artifacts, err := packer2terraform.Filter(parsed)
     if err != nil {
         // fmt.Errorf("Packer build failed: %s", err)
-        fmt.Printf("Packer build failed: %s", err)
-        os.Exit(3)
+        log.Fatalf("Packer build failed: %s", err)
     }
 
 
@@ -84,17 +81,15 @@ func main() {
     } else {
         buf, err := ioutil.ReadFile(*tmpl)
         if err != nil {
-            fmt.Printf("Template file read failed: %s", err)
-            os.Exit(6)
+            log.Fatalf("Template file read failed: %s", err)
         }
         templateString = string(buf)
     }
     doc, err := packer2terraform.ToTemplate(artifacts, templateString)
     if err != nil {
-        fmt.Printf("Template render failed: %s", err)
-        os.Exit(6)
+        log.Fatalf("Template render failed: %s", err)
     }
-    fmt.Println(doc)
+    log.Println(doc)
 
 
     // Done

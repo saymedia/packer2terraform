@@ -53,7 +53,6 @@ func ReadCSV(csvReader io.Reader) (ret [][]string, err error) {
 }
 
 func Filter(parsed [][]string) (artifacts []Artifact, err error) {
-
     var errorCount int
     var errorMsg []string
     var artifactCount int
@@ -73,7 +72,6 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
         // Artifacts:
         if line.lineType == "artifact-count" {
             artifactCount = line.messageTypeI
-            // fmt.Printf("Artifact Count: %d\n", artifactCount)
         }
         if line.lineType == "artifact" {
 
@@ -125,9 +123,6 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
 }
 
 func ToTemplate(artifacts []Artifact, tmpl string) (ret string, err error) {
-
-    // fmt.Printf("Artifacts: %s", artifacts)
-
     // Setup the page vars
     var thePage = TemplatePage{}
     thePage.Artifacts = artifacts
