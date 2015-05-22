@@ -8,7 +8,39 @@ packer2terraform turns Packer's [machine-readable output](https://packer.io/docs
 
 packer2terraform reads from STDIN and writes to STDOUT.
 
+    packer2terraform -f [input filename] -template [template filename]
+
+## Example
+
     packer -machine-readable build app.json | packer2terraform > app.tfvars
+
+Given this CSV input:
+
+    1432168589,amazon-ebs,artifact-count,1
+    1432168589,amazon-ebs,artifact,0,builder-id,mitchellh.amazonebs
+    1432168589,amazon-ebs,artifact,0,id,us-west-1:ami-df76909b
+    1432168589,amazon-ebs,artifact,0,string,AMIs were created:\n\nus-west-1: ami-df76909b
+    1432168589,amazon-ebs,artifact,0,files-count,0
+    1432168589,amazon-ebs,artifact,0,end
+
+And this template:
+
+    variable "images" {
+        default = {
+    {{range .Artifacts}}
+            {{index .IdSplit 0}} = "{{index .IdSplit 1}}"{{end}}
+        }
+    }
+
+packer2terraform will produce this output:
+
+    variable "images" {
+        default = {
+    
+            us-west-1 = "ami-df79909b"
+            us-west-2 = "ami-df79909c"
+        }
+    }
 
 ## Install
 

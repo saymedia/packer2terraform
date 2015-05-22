@@ -7,6 +7,7 @@ import (
     "testing"
 )
 
+
 func csvToStrings(data string) (out [][]string) {
     splitData := strings.Split(data, "\n")
     for _, v := range splitData {
@@ -127,7 +128,7 @@ func TestFilterMultiSuccess(t *testing.T) {
     }
 }
 
-func TestToTerraformVars(t *testing.T) {
+func TestToTemplate(t *testing.T) {
     data := csvToStrings(`1432168589,amazon-ebs,artifact-count,2
 1432168589,amazon-ebs,artifact,0,builder-id,mitchellh.amazonebs
 1432168589,amazon-ebs,artifact,0,id,us-west-1:ami-df79909b
@@ -141,21 +142,24 @@ func TestToTerraformVars(t *testing.T) {
 1432168589,amazon-ebs,artifact,1,end`)
     out := `variable "images" {
     default = {
-            us-west-1 = "ami-df79909b"
-            us-west-2 = "ami-df79909c"
+
+        us-west-1 = "ami-df79909b"
+        us-west-2 = "ami-df79909c"
     }
 }`
 
     artifacts, err := Filter(data)
-    vars, err := ToTerraformVars(artifacts)
+    doc, err := ToTemplate(artifacts, TemplateAmazonEBS)
     if err != nil {
-        t.Log("Vars transform produced an error")
+        t.Log("Template transform produced an error")
         t.Log("Error:", err)
         t.Fail()
     }
-    if vars != out {
-        t.Log("Vars transform didn't produce correct output")
-        t.Log("Output:", vars)
+    if doc != out {
+        t.Log("Template transform didn't produce correct output")
+        t.Log("Doc:", doc)
+        t.Log("Output:", doc)
         t.Fail()
     }
 }
+

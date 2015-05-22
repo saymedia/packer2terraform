@@ -2,13 +2,16 @@
 package packer2terraform
 
 import (
+    "bytes"
     "encoding/csv"
     "errors"
     "fmt"
     "io"
     "strconv"
     "strings"
+    "text/template"
 )
+
 
 type LogLine struct {
     time         string
@@ -24,11 +27,25 @@ type Artifact struct {
     BuilderType string
     BuilderId   string
     Id          string
+    IdSplit     []string
     Message     string
     FilesCount  string
 }
 
-func Parse(csvReader io.Reader) (ret [][]string, err error) {
+type TemplatePage struct {
+    Artifacts []Artifact
+}
+
+
+var TemplateAmazonEBS = `variable "images" {
+    default = {
+{{range .Artifacts}}
+        {{index .IdSplit 0}} = "{{index .IdSplit 1}}"{{end}}
+    }
+}`;
+
+
+func ReadCSV(csvReader io.Reader) (ret [][]string, err error) {
     reader := csv.NewReader(csvReader)
     reader.FieldsPerRecord = -1
     reader.LazyQuotes = true
@@ -42,7 +59,6 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
     var artifactCount int
 
     for _, v := range parsed {
-        // line := new(LogLine)
         line := LogLine{v[0], v[1], v[2], v[3], 0, "", ""}
         if len(v) > 4 {
             line.messageA = v[4]
@@ -53,7 +69,6 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
         if len(line.messageType) > 0 {
             line.messageTypeI, _ = strconv.Atoi(line.messageType)
         }
-        // fmt.Printf("Line: %s", line)
 
         // Artifacts:
         if line.lineType == "artifact-count" {
@@ -71,6 +86,7 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
             a := &artifacts[line.messageTypeI]
             if line.messageA == "id" {
                 a.Id = line.messageB
+                a.IdSplit = strings.Split(line.messageB, ":")
             }
             if line.messageA == "files-count" {
                 a.FilesCount = line.messageB
@@ -108,28 +124,19 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
     return artifacts, nil
 }
 
-func ToTerraformVars(artifacts []Artifact) (ret string, err error) {
-    // fmt.Println("ttv:", artifacts)
-    retSlice := []string{}
+func ToTemplate(artifacts []Artifact, tmpl string) (ret string, err error) {
 
-    tfTemplate := `variable "images" {
-    default = {
-%s
-    }
-}`
+    // fmt.Printf("Artifacts: %s", artifacts)
 
-    for _, artifact := range artifacts {
-        // ret = fmt.Sprintf("id=%s", artifact.Id)
-        // fmt.Println("id=", artifact)
-        if artifact.BuilderType == "amazon-ebs" {
-            stringSplit := strings.Split(artifact.Id, ":")
-            // fmt.Sprintf("ss=%s", stringSplit)
-            retSlice = append(retSlice, fmt.Sprintf("            %s = \"%s\"", stringSplit[0], stringSplit[1]))
-        }
-    }
+    // Setup the page vars
+    var thePage = TemplatePage{}
+    thePage.Artifacts = artifacts
 
-    ret = strings.Join(retSlice, "\n")
-    ret = fmt.Sprintf(tfTemplate, ret)
-    // fmt.Println("ttv:", ret)
+    t := template.Must(template.New("tmpl").Parse(tmpl))
+
+    var doc bytes.Buffer
+    t.Execute(&doc, thePage)
+    ret = doc.String()
+
     return ret, nil
 }
