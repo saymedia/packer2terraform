@@ -2,7 +2,7 @@
 
 packer2terraform turns Packer's [machine-readable output](https://packer.io/docs/command-line/machine-readable.html) into [Terraform-readable tfvars](https://terraform.io/docs/configuration/variables.html). For example, you have Packer build an AMI that Terraform deploys to AWS.
 
-![travis build status for packer2terraform](https://travis-ci.org/saymedia/packer2terraform.svg)
+[![travis build status for packer2terraform](https://travis-ci.org/saymedia/packer2terraform.svg)](https://travis-ci.org/saymedia/packer2terraform)
 
 ## Usage
 
