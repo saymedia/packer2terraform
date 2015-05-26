@@ -14,22 +14,22 @@ import (
 
 
 type LogLine struct {
-    time         string
-    builderType  string
-    lineType     string
-    messageType  string
-    messageTypeI int
-    messageA     string
-    messageB     string
+    timestamp     string
+    builderTarget string
+    lineType      string
+    messageType   string
+    messageTypeI  int
+    messageA      string
+    messageB      string
 }
 
 type Artifact struct {
-    BuilderType string
-    BuilderId   string
-    Id          string
-    IdSplit     []string
-    Message     string
-    FilesCount  string
+    BuilderTarget string
+    BuilderId     string
+    Id            string
+    IdSplit       []string
+    Message       string
+    FilesCount    string
 }
 
 type TemplatePage struct {
@@ -61,10 +61,10 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
         // Build a LogLine
         line := LogLine{"", "", "", "", 0, "", ""}
         if len(v) > 0 {
-            line.time = v[0]
+            line.timestamp = v[0]
         }
         if len(v) > 1 {
-            line.builderType = v[1]
+            line.builderTarget = v[1]
         }
         if len(v) > 2 {
             line.lineType = v[2]
@@ -90,7 +90,7 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
 
             if len(artifacts) < line.messageTypeI+1 {
                 a := Artifact{}
-                a.BuilderType = line.builderType
+                a.BuilderTarget = line.builderTarget
                 artifacts = append(artifacts, a)
             }
 
