@@ -58,7 +58,20 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
     var artifactCount int
 
     for _, v := range parsed {
-        line := LogLine{v[0], v[1], v[2], v[3], 0, "", ""}
+        // Build a LogLine
+        line := LogLine{"", "", "", "", 0, "", ""}
+        if len(v) > 0 {
+            line.time = v[0]
+        }
+        if len(v) > 1 {
+            line.builderType = v[1]
+        }
+        if len(v) > 2 {
+            line.lineType = v[2]
+        }
+        if len(v) > 3 {
+            line.messageType = v[3]
+        }
         if len(v) > 4 {
             line.messageA = v[4]
         }
@@ -115,8 +128,14 @@ func Filter(parsed [][]string) (artifacts []Artifact, err error) {
         return nil, errors.New(strings.Join(errorMsg, "\n"))
     }
 
+    // Clean up empty artifacts
+    for i, artifact := range artifacts {
+        if artifact.Id == "" {
+            artifacts = append(artifacts[:i], artifacts[i+1:]...)
+        }
+    }
     if len(artifacts) == 0 {
-        return nil, errors.New("No Artifact Id found.")
+        return nil, errors.New("No Artifacts found.")
     }
 
     return artifacts, nil

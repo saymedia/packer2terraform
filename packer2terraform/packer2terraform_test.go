@@ -16,6 +16,26 @@ func csvToStrings(data string) (out [][]string) {
     return out
 }
 
+func TestBadCSV(t *testing.T) {
+    data := csvToStrings(`1,2,3,4,5,6,7,8,9,0`)
+
+    artifacts, err := Filter(data)
+    if err == nil {
+        t.Log("Error data didn't produce a filter error")
+        t.Log("Error:", err)
+        t.Fail()
+    }
+    if fmt.Sprintf("%s", err) != "No Artifacts found." {
+        t.Log("Error data produced wrong flter error message")
+        t.Log(fmt.Sprintf("%s", err))
+        t.Fail()
+    }
+    if len(artifacts) > 0 {
+        t.Log("Error data produced a filter artifact")
+        t.Fail()
+    }
+}
+
 func TestFilterFail(t *testing.T) {
     data := csvToStrings(`1432149127,,ui,message,    amazon-ebs: [2015-05-20T19:12:07+00:00] FATAL: Chef::Exceptions::ChildConvergeError: Chef run process exited unsuccessfully (exit code 1)
 1432149127,,ui,say,==> amazon-ebs: Terminating the source AWS instance...
@@ -42,6 +62,48 @@ func TestFilterFail(t *testing.T) {
     }
     if len(artifacts) > 0 {
         t.Log("Error data produced a filter artifact")
+        t.Fail()
+    }
+}
+
+func TestFilterEmpty(t *testing.T) {
+    data := csvToStrings(`2015/05/26 13:49:03 [INFO] 5 bytes written for 'stdout'
+2015/05/26 13:49:03 [INFO] 0 bytes written for 'stderr'
+2015/05/26 13:49:03 [INFO] RPC client: Communicator ended with: 0
+2015/05/26 13:49:03 [INFO] RPC endpoint: Communicator ended with: 0
+2015/05/26 13:49:03 packer-provisioner-shell: 2015/05/26 13:49:03 [INFO] 0 bytes written for 'stderr'
+2015/05/26 13:49:03 packer-provisioner-shell: 2015/05/26 13:49:03 [INFO] 5 bytes written for 'stdout'
+2015/05/26 13:49:03 packer-provisioner-shell: 2015/05/26 13:49:03 [INFO] RPC client: Communicator ended with: 0
+1432673343,,ui,say,==> null: Running post-processor: terraform
+2015/05/26 13:49:03 Deleting original artifact for build 'null'
+2015/05/26 13:49:03 Builds completed. Waiting on interrupt barrier...
+1432673343,,ui,say,Build 'null' finished.
+1432673343,,ui,say,\n==> Builds finished. The artifacts of successful builds are:
+1432673343,null,artifact-count,1
+1432673343,null,artifact,0,builder-id,
+1432673343,null,artifact,0,id,
+1432673343,null,artifact,0,string,
+2015/05/26 13:49:03 waiting for all plugin processes to complete...
+1432673343,null,artifact,0,files-count,0
+1432673343,null,artifact,0,end
+1432673343,,ui,say,--> null:
+`)
+
+    artifacts, err := Filter(data)
+    if err == nil {
+        t.Log("Empty data didn't produce a filter error")
+        t.Log("Error:", err)
+        t.Fail()
+    }
+    if fmt.Sprintf("%s", err) != "No Artifacts found." {
+        t.Log("Empty data produced wrong flter error message")
+        t.Log(fmt.Sprintf("%s", err))
+        t.Fail()
+    }
+    if len(artifacts) > 0 {
+        t.Log("Empty data produced a filter artifact")
+        t.Log(fmt.Sprintf("Empty artifact count: %d", len(artifacts)))
+        t.Log(fmt.Sprintf("Empty artifact: %s", artifacts[0]))
         t.Fail()
     }
 }
@@ -162,4 +224,3 @@ func TestToTemplate(t *testing.T) {
         t.Fail()
     }
 }
-
