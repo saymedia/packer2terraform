@@ -136,8 +136,8 @@ func TestFilterSuccess(t *testing.T) {
 
     artifact := artifacts[0]
     // t.Log(artifact)
-    if artifact.BuilderType != "amazon-ebs" {
-        t.Log("Success data didn't produce the correct builderType")
+    if artifact.BuilderTarget != "amazon-ebs" {
+        t.Log("Success data didn't produce the correct builderTarget")
         t.Fail()
     }
     if artifact.Id != "us-west-1:ami-df79909b" {
@@ -180,8 +180,8 @@ func TestFilterMultiSuccess(t *testing.T) {
 
     artifact := artifacts[1]
     // t.Log(artifact)
-    if artifact.BuilderType != "amazon-ebs" {
-        t.Log("Success data didn't produce the correct builderType")
+    if artifact.BuilderTarget != "amazon-ebs" {
+        t.Log("Success data didn't produce the correct builderTarget")
         t.Fail()
     }
     if artifact.Id != "us-west-2:ami-df79909c" {
