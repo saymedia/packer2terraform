@@ -56,6 +56,7 @@ type ErrList struct {
 func (e *ErrList) Error() string {
 	return "List of errors: " + strings.Join(e.List, "; ")
 }
+// Add an error string to the list of errors
 func (e *ErrList) Add(err string) {
 	e.List = append(e.List, err)
 }
