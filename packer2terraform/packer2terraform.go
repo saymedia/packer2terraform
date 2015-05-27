@@ -1,156 +1,189 @@
-
 package packer2terraform
 
 import (
-    "bytes"
-    "encoding/csv"
-    "errors"
-    "fmt"
-    "io"
-    "strconv"
-    "strings"
-    "text/template"
+	"bytes"
+	"encoding/csv"
+	"errors"
+	"fmt"
+	"io"
+	"strconv"
+	"strings"
+	"text/template"
 )
 
-
-type LogLine struct {
-    timestamp     string
-    builderTarget string
-    lineType      string
-    messageType   string
-    messageTypeI  int
-    messageA      string
-    messageB      string
+// logLine encapsulates a single log line from the csv
+type logLine struct {
+	timestamp     string
+	builderTarget string
+	lineType      string
+	messageType   string
+	messageTypeI  int
+	messageA      string
+	messageB      string
 }
 
+// Artifact is our representation of a Packer.Artifact
 type Artifact struct {
-    BuilderTarget string
-    BuilderId     string
-    Id            string
-    IdSplit       []string
-    Message       string
-    FilesCount    string
+	BuilderTarget string
+	BuilderID     string
+	ID            string
+	IDSplit       []string
+	Message       string
+	FilesCount    string
 }
 
-type TemplatePage struct {
-    Artifacts []Artifact
+// From the Packer docs, this represents:
+// 1 index, 2 subtype, 3..n subtype data
+
+type templatePage struct {
+	Artifacts []Artifact
 }
 
+// ErrMissing when artifact-count is higher than the Artifacts found
+type ErrMissing struct {
+	count int
+}
 
+func (e *ErrMissing) Error() string {
+	return fmt.Sprintf("Missing %d artifacts.", e.count)
+}
+
+// ErrList when there's errors mentioned in the CSV data
+type ErrList struct {
+	List []string
+}
+
+func (e *ErrList) Error() string {
+	return "List of errors: " + strings.Join(e.List, "; ")
+}
+func (e *ErrList) Add(err string) {
+	e.List = append(e.List, err)
+}
+
+// ErrNotFound when there's no artifacts found in the CSV data
+var ErrNotFound = errors.New("No Artifacts found.")
+
+// A simple terraform template for aws amis in zones
 var TemplateAmazonEBS = `variable "images" {
     default = {
 {{range .Artifacts}}
-        {{index .IdSplit 0}} = "{{index .IdSplit 1}}"{{end}}
+        {{index .IDSplit 0}} = "{{index .IDSplit 1}}"{{end}}
     }
-}`;
+}`
 
-
+// ReadCSV converts the csv files into a data structure we can use
 func ReadCSV(csvReader io.Reader) (ret [][]string, err error) {
-    reader := csv.NewReader(csvReader)
-    reader.FieldsPerRecord = -1
-    reader.LazyQuotes = true
-    return reader.ReadAll()
+	reader := csv.NewReader(csvReader)
+	reader.FieldsPerRecord = -1
+	reader.LazyQuotes = true
+	return reader.ReadAll()
 }
 
+// Filter extracts Artifacts from the CSV data
 func Filter(parsed [][]string) (artifacts []Artifact, err error) {
-    var errorCount int
-    var errorMsg []string
-    var artifactCount int
+	var errorCount int
+	var errorMsg ErrList
+	var artifactCount int
 
-    for _, v := range parsed {
-        // Build a LogLine
-        line := LogLine{"", "", "", "", 0, "", ""}
-        if len(v) > 0 {
-            line.timestamp = v[0]
-        }
-        if len(v) > 1 {
-            line.builderTarget = v[1]
-        }
-        if len(v) > 2 {
-            line.lineType = v[2]
-        }
-        if len(v) > 3 {
-            line.messageType = v[3]
-        }
-        if len(v) > 4 {
-            line.messageA = v[4]
-        }
-        if len(v) > 5 {
-            line.messageB = v[5]
-        }
-        if len(line.messageType) > 0 {
-            line.messageTypeI, _ = strconv.Atoi(line.messageType)
-        }
+	for _, v := range parsed {
 
-        // Artifacts:
-        if line.lineType == "artifact-count" {
-            artifactCount = line.messageTypeI
-        }
-        if line.lineType == "artifact" {
+		// Build a logLine
+		line := logLine{"", "", "", "", 0, "", ""}
+		if len(v) > 0 {
+			line.timestamp = v[0]
+		}
+		if len(v) > 1 {
+			line.builderTarget = v[1]
+		}
+		if len(v) > 2 {
+			line.lineType = v[2]
+		}
+		if len(v) > 3 {
+			line.messageType = v[3]
+		}
+		if len(v) > 4 {
+			line.messageA = v[4]
+		}
+		if len(v) > 5 {
+			line.messageB = v[5]
+		}
+		if len(line.messageType) > 0 {
+			line.messageTypeI, _ = strconv.Atoi(line.messageType)
+		}
 
-            if len(artifacts) < line.messageTypeI+1 {
-                a := Artifact{}
-                a.BuilderTarget = line.builderTarget
-                artifacts = append(artifacts, a)
-            }
+		// Artifacts:
+		if line.lineType == "artifact-count" {
+			artifactCount = line.messageTypeI
+		}
+		if line.lineType == "artifact" {
 
-            a := &artifacts[line.messageTypeI]
-            if line.messageA == "id" {
-                a.Id = line.messageB
-                a.IdSplit = strings.Split(line.messageB, ":")
-            }
-            if line.messageA == "files-count" {
-                a.FilesCount = line.messageB
-            }
-            if line.messageA == "builder-id" {
-                a.BuilderId = line.messageB
-            }
-            if line.messageA == "string" {
-                a.Message = line.messageB
-            }
-        }
+			if len(artifacts) < line.messageTypeI+1 {
+				a := Artifact{}
+				a.BuilderTarget = line.builderTarget
+				artifacts = append(artifacts, a)
+			}
 
-        // Errors:
-        if line.lineType == "error-count" && line.messageTypeI > 0 {
-            errorCount = line.messageTypeI
-        }
-        if line.lineType == "error" {
-            errorMsg = append(errorMsg, line.messageType)
-        }
-    }
+			a := &artifacts[line.messageTypeI]
+			if line.messageA == "id" {
+				a.ID = line.messageB
+				a.IDSplit = strings.Split(line.messageB, ":")
+			}
+			if line.messageA == "files-count" {
+				a.FilesCount = line.messageB
+			}
+			if line.messageA == "nil" {
+				// no file
+			}
+			if line.messageA == "builder-id" {
+				a.BuilderID = line.messageB
+			}
+			if line.messageA == "string" {
+				a.Message = line.messageB
+			}
+		}
 
-    if artifactCount < len(artifacts) {
-        artifactsMissing := artifactCount - len(artifacts)
-        return nil, errors.New(fmt.Sprintf("Missing %s artifacts.", artifactsMissing))
-    }
+		// Errors:
+		if line.lineType == "error-count" && line.messageTypeI > 0 {
+			errorCount = line.messageTypeI
+		}
+		if line.lineType == "error" {
+			errorMsg.Add(line.messageType)
+		}
+	}
 
-    if errorCount > 0 && len(errorMsg) > 0 {
-        return nil, errors.New(strings.Join(errorMsg, "\n"))
-    }
+	if artifactCount < len(artifacts) {
+		artifactsMissing := artifactCount - len(artifacts)
+		return nil, &ErrMissing{artifactsMissing}
+	}
 
-    // Clean up empty artifacts
-    for i, artifact := range artifacts {
-        if artifact.Id == "" {
-            artifacts = append(artifacts[:i], artifacts[i+1:]...)
-        }
-    }
-    if len(artifacts) == 0 {
-        return nil, errors.New("No Artifacts found.")
-    }
+	if errorCount > 0 && len(errorMsg.List) > 0 {
+		return nil, &errorMsg
+	}
 
-    return artifacts, nil
+	// Clean up empty artifacts
+	for i, artifact := range artifacts {
+		if artifact.ID == "" {
+			artifacts = append(artifacts[:i], artifacts[i+1:]...)
+		}
+	}
+	if len(artifacts) == 0 {
+		return nil, ErrNotFound
+	}
+
+	return artifacts, nil
 }
 
+// ToTemplate applies the artifacts to a given template string
 func ToTemplate(artifacts []Artifact, tmpl string) (ret string, err error) {
-    // Setup the page vars
-    var thePage = TemplatePage{}
-    thePage.Artifacts = artifacts
+	// Setup the page vars
+	var thePage = templatePage{}
+	thePage.Artifacts = artifacts
 
-    t := template.Must(template.New("tmpl").Parse(tmpl))
+	t := template.Must(template.New("tmpl").Parse(tmpl))
 
-    var doc bytes.Buffer
-    t.Execute(&doc, thePage)
-    ret = doc.String()
+	var doc bytes.Buffer
+	t.Execute(&doc, thePage)
+	ret = doc.String()
 
-    return ret, nil
+	return ret, nil
 }

@@ -28,7 +28,7 @@ And this template:
     variable "images" {
         default = {
     {{range .Artifacts}}
-            {{index .IdSplit 0}} = "{{index .IdSplit 1}}"{{end}}
+            {{index .IDSplit 0}} = "{{index .IDSplit 1}}"{{end}}
         }
     }
 
