@@ -21,9 +21,10 @@ type LogLine struct {
 	messageA      string
 	messageB      string
 }
+
 // NewLogLine constructs a LogLine
 func NewLogLine(v []string) *LogLine {
-    l := &LogLine{"", "", "", "", 0, "", ""}
+	l := &LogLine{"", "", "", "", 0, "", ""}
 
 	if len(v) > 0 {
 		l.timestamp = v[0]
@@ -58,6 +59,7 @@ type Artifact struct {
 	Message       string
 	FilesCount    string
 }
+
 // ApplyLogLine uses a LogLine to
 func (a *Artifact) ApplyLogLine(line LogLine) {
 	if line.messageA == "builder-id" {
