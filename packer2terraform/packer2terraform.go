@@ -21,6 +21,33 @@ type LogLine struct {
 	messageA      string
 	messageB      string
 }
+// NewLogLine constructs a LogLine
+func NewLogLine(v []string) *LogLine {
+    l := &LogLine{"", "", "", "", 0, "", ""}
+
+	if len(v) > 0 {
+		l.timestamp = v[0]
+	}
+	if len(v) > 1 {
+		l.builderTarget = v[1]
+	}
+	if len(v) > 2 {
+		l.lineType = v[2]
+	}
+	if len(v) > 3 {
+		l.messageType = v[3]
+	}
+	if len(v) > 4 {
+		l.messageA = v[4]
+	}
+	if len(v) > 5 {
+		l.messageB = v[5]
+	}
+	if len(l.messageType) > 0 {
+		l.messageTypeI, _ = strconv.Atoi(l.messageType)
+	}
+	return l
+}
 
 // Artifact is our representation of a Packer.Artifact
 type Artifact struct {
@@ -30,6 +57,25 @@ type Artifact struct {
 	IDSplit       []string
 	Message       string
 	FilesCount    string
+}
+// ApplyLogLine uses a LogLine to
+func (a *Artifact) ApplyLogLine(line LogLine) {
+	if line.messageA == "builder-id" {
+		a.BuilderID = line.messageB
+	}
+	if line.messageA == "id" {
+		a.ID = line.messageB
+		a.IDSplit = strings.Split(line.messageB, ":")
+	}
+	if line.messageA == "string" {
+		a.Message = line.messageB
+	}
+	if line.messageA == "files-count" {
+		a.FilesCount = line.messageB
+	}
+	if line.messageA == "nil" {
+		// no file
+	}
 }
 
 // From the Packer docs, this represents:
@@ -81,58 +127,26 @@ func ReadCSV(csvReader io.Reader) (ret [][]string, err error) {
 	return reader.ReadAll()
 }
 
-// CreateLines turns the CSV output into the LogLine data structure
-func CreateLines(parsed [][]string) (lines []LogLine) {
-
-	for _, v := range parsed {
-		if len(v) < 2 {
-			continue
-		}
-
-		// Build a LogLine
-		line := LogLine{"", "", "", "", 0, "", ""}
-		if len(v) > 0 {
-			line.timestamp = v[0]
-		}
-		if len(v) > 1 {
-			line.builderTarget = v[1]
-		}
-		if len(v) > 2 {
-			line.lineType = v[2]
-		}
-		if len(v) > 3 {
-			line.messageType = v[3]
-		}
-		if len(v) > 4 {
-			line.messageA = v[4]
-		}
-		if len(v) > 5 {
-			line.messageB = v[5]
-		}
-		if len(line.messageType) > 0 {
-			line.messageTypeI, _ = strconv.Atoi(line.messageType)
-		}
-
-		lines = append(lines, line)
-	}
-
-	return lines
-}
-
 // ExtractArtifacts extracts Artifacts from array of LogLines
-func ExtractArtifacts(lines []LogLine) (artifacts []Artifact, err error) {
+func ExtractArtifacts(parsed [][]string) (artifacts []Artifact, err error) {
 	var errorCount int
 	var errorMsg ErrList
 	var artifactCount int
 
-	for _, line := range lines {
+	for _, v := range parsed {
+		if len(v) < 2 {
+			// Not enough data to be useful
+			continue
+		}
+
+		// Build a LogLine
+		line := NewLogLine(v)
 
 		// Artifacts:
 		if line.lineType == "artifact-count" {
 			artifactCount = line.messageTypeI
 		}
 		if line.lineType == "artifact" {
-
 			if len(artifacts) < line.messageTypeI+1 {
 				a := Artifact{}
 				a.BuilderTarget = line.builderTarget
@@ -140,22 +154,7 @@ func ExtractArtifacts(lines []LogLine) (artifacts []Artifact, err error) {
 			}
 
 			a := &artifacts[line.messageTypeI]
-			if line.messageA == "id" {
-				a.ID = line.messageB
-				a.IDSplit = strings.Split(line.messageB, ":")
-			}
-			if line.messageA == "files-count" {
-				a.FilesCount = line.messageB
-			}
-			if line.messageA == "nil" {
-				// no file
-			}
-			if line.messageA == "builder-id" {
-				a.BuilderID = line.messageB
-			}
-			if line.messageA == "string" {
-				a.Message = line.messageB
-			}
+			a.ApplyLogLine(*line)
 		}
 
 		// Errors:

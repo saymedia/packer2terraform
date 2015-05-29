@@ -14,47 +14,76 @@ func csvToStrings(data string) (out [][]string) {
 	return out
 }
 
-func TestLineCreation(t *testing.T) {
+func TestGoodLineCreation(t *testing.T) {
 	data := csvToStrings(`1432168589,amazon-ebs,artifact-count,1
 1432168589,amazon-ebs,artifact,0,builder-id,mitchellh.amazonebs
 1432168589,amazon-ebs,artifact,0,id,us-west-1:ami-df79909b
 1432168589,amazon-ebs,artifact,0,string,AMIs were created:\n\nus-west-1: ami-df79909b
 1432168589,amazon-ebs,artifact,0,files-count,0
 1432168589,amazon-ebs,artifact,0,end
+1,2,3,4,5,6,7,8,9,0
+1432149151,,error-count,1
 `)
 
-	lines := CreateLines(data)
-	if len(lines) == 0 {
-		t.Log("CreateLines produced no lines")
-		t.Fail()
-	}
-	line := lines[2]
+	line := NewLogLine(data[2])
 	if line.timestamp != "1432168589" {
-		t.Log("CreateLines produced wrong timestamp", line.timestamp)
+		t.Log("NewLogLine produced wrong timestamp", line.timestamp)
 		t.Fail()
 	}
 	if line.builderTarget != "amazon-ebs" {
-		t.Log("CreateLines produced wrong builderTarget", line.builderTarget)
+		t.Log("NewLogLine produced wrong builderTarget", line.builderTarget)
 		t.Fail()
 	}
 	if line.lineType != "artifact" {
-		t.Log("CreateLines produced wrong lineType", line.lineType)
+		t.Log("NewLogLine produced wrong lineType", line.lineType)
 		t.Fail()
 	}
 	if line.messageType != "0" {
-		t.Log("CreateLines produced wrong messageType", line.messageType)
+		t.Log("NewLogLine produced wrong messageType", line.messageType)
 		t.Fail()
 	}
 	if line.messageTypeI != 0 {
-		t.Log("CreateLines produced wrong messageType", line.messageTypeI)
+		t.Log("NewLogLine produced wrong messageType", line.messageTypeI)
 		t.Fail()
 	}
 	if line.messageA != "id" {
-		t.Log("CreateLines produced wrong messageA", line.messageA)
+		t.Log("NewLogLine produced wrong messageA", line.messageA)
 		t.Fail()
 	}
 	if line.messageB != "us-west-1:ami-df79909b" {
-		t.Log("CreateLines produced wrong messageB", line.messageB)
+		t.Log("NewLogLine produced wrong messageB", line.messageB)
+		t.Fail()
+	}
+}
+
+func TestBadLineCreation(t *testing.T) {
+	data := csvToStrings(`1432168589,amazon-ebs,artifact-count,1
+1432168589,amazon-ebs,artifact,0,builder-id,mitchellh.amazonebs
+1432168589,amazon-ebs,artifact,0,id,us-west-1:ami-df79909b
+1432168589,amazon-ebs,artifact,0,string,AMIs were created:\n\nus-west-1: ami-df79909b
+1432168589,amazon-ebs,artifact,0,files-count,0
+1432168589,amazon-ebs,artifact,0,end
+1,2,3,4,5,6,7,8,9,0
+1432149151,,error-count,1
+`)
+	line := NewLogLine(data[0])
+	if line == nil {
+		t.Log("NewLogLine didn't parse artifact-count", line)
+		t.Fail()
+	}
+	line = NewLogLine(data[5])
+	if line == nil {
+		t.Log("NewLogLine didn't parse end", line)
+		t.Fail()
+	}
+	line = NewLogLine(data[6])
+	if line == nil {
+		t.Log("NewLogLine didn't parse junk", line)
+		t.Fail()
+	}
+	line = NewLogLine(data[7])
+	if line == nil {
+		t.Log("NewLogLine didn't parse error-count", line)
 		t.Fail()
 	}
 }
@@ -62,8 +91,7 @@ func TestLineCreation(t *testing.T) {
 func TestBadCSV(t *testing.T) {
 	data := csvToStrings(`1,2,3,4,5,6,7,8,9,0`)
 
-	lines := CreateLines(data)
-	artifacts, err := ExtractArtifacts(lines)
+	artifacts, err := ExtractArtifacts(data)
 	if err == nil {
 		t.Log("Error data didn't produce a filter error")
 		t.Log("Error:", err)
@@ -94,8 +122,7 @@ func TestFilterFail(t *testing.T) {
 1432149151,,ui,say,\n==> Builds finished but no artifacts were created.`)
 	firstError := "Error executing Chef: Non-zero exit status: 1\nError executing Chef: Non-zero exit status: 2"
 
-	lines := CreateLines(data)
-	artifacts, err := ExtractArtifacts(lines)
+	artifacts, err := ExtractArtifacts(data)
 	if err == nil {
 		t.Log("Error data didn't produce a filter error")
 		t.Log("Error:", err)
@@ -140,8 +167,7 @@ func TestFilterEmpty(t *testing.T) {
 1432673343,,ui,say,--> null:
 `)
 
-	lines := CreateLines(data)
-	artifacts, err := ExtractArtifacts(lines)
+	artifacts, err := ExtractArtifacts(data)
 	if err == nil {
 		t.Log("Empty data didn't produce a filter error")
 		t.Log("Error:", err)
@@ -175,8 +201,7 @@ func TestFilterSuccess(t *testing.T) {
 1432168589,amazon-ebs,artifact,0,end
 1432168589,,ui,say,--> amazon-ebs: AMIs were created:\n\nus-west-1: ami-df79909b`)
 
-	lines := CreateLines(data)
-	artifacts, err := ExtractArtifacts(lines)
+	artifacts, err := ExtractArtifacts(data)
 	if err != nil {
 		t.Log("Success data produced a filter error")
 		t.Log("Error:", err)
@@ -212,8 +237,7 @@ func TestFilterMultiSuccess(t *testing.T) {
 1432168589,amazon-ebs,artifact,1,files-count,0
 1432168589,amazon-ebs,artifact,1,end`)
 
-	lines := CreateLines(data)
-	artifacts, err := ExtractArtifacts(lines)
+	artifacts, err := ExtractArtifacts(data)
 	if err != nil {
 		t.Log("Success data produced a filter error")
 		t.Log("Error:", err)
@@ -264,8 +288,7 @@ func TestToTemplate(t *testing.T) {
     }
 }`
 
-	lines := CreateLines(data)
-	artifacts, err := ExtractArtifacts(lines)
+	artifacts, err := ExtractArtifacts(data)
 	doc, err := ToTemplate(artifacts, TemplateAmazonEBS)
 	if err != nil {
 		t.Log("Template transform produced an error")

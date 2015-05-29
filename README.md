@@ -22,6 +22,11 @@ Given this CSV input:
     1432168589,amazon-ebs,artifact,0,string,AMIs were created:\n\nus-west-1: ami-df76909b
     1432168589,amazon-ebs,artifact,0,files-count,0
     1432168589,amazon-ebs,artifact,0,end
+    1432168589,amazon-ebs,artifact,1,builder-id,mitchellh.amazonebs
+    1432168589,amazon-ebs,artifact,1,id,us-west-2:ami-df79909c
+    1432168589,amazon-ebs,artifact,1,string,AMIs were created:\n\nus-west-2: ami-df79909c
+    1432168589,amazon-ebs,artifact,1,files-count,0
+    1432168589,amazon-ebs,artifact,1,end
 
 And this template:
 
