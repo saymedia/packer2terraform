@@ -62,7 +62,8 @@ func main() {
 	}
 
 	// Extract the artifacts
-	artifacts, err := packer2terraform.Filter(parsed)
+    lines := packer2terraform.CreateLines(parsed)
+    artifacts, err := packer2terraform.ExtractArtifacts(lines)
 	if err != nil {
 		// fmt.Errorf("Packer build failed: %s", err)
 		log.Fatalf("Packer build failed: %s", err)
