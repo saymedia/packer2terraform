@@ -84,39 +84,39 @@ func ReadCSV(csvReader io.Reader) (ret [][]string, err error) {
 // CreateLines turns the CSV output into the LogLine data structure
 func CreateLines(parsed [][]string) (lines []LogLine) {
 
-    for _, v := range parsed {
-        if len(v) < 2 {
-            continue
-        }
+	for _, v := range parsed {
+		if len(v) < 2 {
+			continue
+		}
 
-        // Build a LogLine
-        line := LogLine{"", "", "", "", 0, "", ""}
-        if len(v) > 0 {
-            line.timestamp = v[0]
-        }
-        if len(v) > 1 {
-            line.builderTarget = v[1]
-        }
-        if len(v) > 2 {
-            line.lineType = v[2]
-        }
-        if len(v) > 3 {
-            line.messageType = v[3]
-        }
-        if len(v) > 4 {
-            line.messageA = v[4]
-        }
-        if len(v) > 5 {
-            line.messageB = v[5]
-        }
-        if len(line.messageType) > 0 {
-            line.messageTypeI, _ = strconv.Atoi(line.messageType)
-        }
+		// Build a LogLine
+		line := LogLine{"", "", "", "", 0, "", ""}
+		if len(v) > 0 {
+			line.timestamp = v[0]
+		}
+		if len(v) > 1 {
+			line.builderTarget = v[1]
+		}
+		if len(v) > 2 {
+			line.lineType = v[2]
+		}
+		if len(v) > 3 {
+			line.messageType = v[3]
+		}
+		if len(v) > 4 {
+			line.messageA = v[4]
+		}
+		if len(v) > 5 {
+			line.messageB = v[5]
+		}
+		if len(line.messageType) > 0 {
+			line.messageTypeI, _ = strconv.Atoi(line.messageType)
+		}
 
-        lines = append(lines, line)
-    }
+		lines = append(lines, line)
+	}
 
-    return lines
+	return lines
 }
 
 // ExtractArtifacts extracts Artifacts from array of LogLines
