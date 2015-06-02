@@ -13,6 +13,10 @@ packer2terraform reads from STDIN and writes to STDOUT.
 ## Example
 
     packer -machine-readable build app.json | packer2terraform > app.tfvars
+    
+Or:
+
+    packer2terraform -f packer_out.csv -template tmpl.tfvars > app.tfvars
 
 Given this CSV input:
 
@@ -54,6 +58,8 @@ packer2terraform will produce this output:
 ## Test
 
     go test ./..
+
+Running `./test.sh` additionally tests using `go vet`, `golint`, `gocyclo`, `gofmt` and `go build`, which should be done before a commit.
 
 ## License
 
