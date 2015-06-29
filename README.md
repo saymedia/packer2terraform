@@ -57,7 +57,7 @@ packer2terraform will produce this output:
 
 ## Test
 
-    go test ./..
+    go test ./...
 
 Running `./test.sh` additionally tests using `go vet`, `golint`, `gocyclo`, `gofmt` and `go build`, which should be done before a commit.
 
