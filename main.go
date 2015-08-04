@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"github.com/saymedia/packer2terraform/packer2terraform"
 	"io"
 	"io/ioutil"
@@ -83,7 +84,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Template render failed: %s", err)
 	}
-	log.Println(doc)
+	fmt.Println(doc)
 
 	// Done
 	os.Exit(0)
